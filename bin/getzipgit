@@ -1,0 +1,143 @@
+#!/bin/sh
+
+# variables
+VERBOSE=0
+FORCE=0
+PUSH=1
+DATE=`date --rfc-3339=date`
+GITLOCAL=${VERSION:-"${HOME}/iconset.git"}
+
+DAVSRV="pnt.redhat.com/alfresco/webdav"
+DAVMNT=${VERSION:-"${HOME}/.local/tmp/iconset-current"}
+DAVUSER="${USER}"
+
+STASHPATH="Sites/pnt-portal/documentLibrary/Brand\ assets/Icons/NEW\ Standard\ icons/00_ALL_ICONS_ZIP_FOLDERS"
+STASHFILE="Hardware\,\ software\,\ and\ media.zip"
+STASHTMP="hardwareSoftwareMedia_${DATE}.zip"
+
+mountDav() {
+    # mount the dav drive to temp location
+    [[ $VERBOSE > 0 ]] && echo "INFO: Mounting remote file system"
+    gio mount davs://${DAVUSER}@"${DAVSRV}"
+}
+
+getDavInfo() {
+    DAVMNT=`gio info davs://${DAVUSER}@${DAVSRV} | awk -F": " '/local path/{ print $2 ;}'`
+    [[ $VERBOSE > 0 ]] && echo "INFO: Filesystem mounted at $DAVMNT"
+}
+
+unmountDav() {
+    # mount the dav drive to temp location
+    [[ $VERBOSE > 0 ]] && echo "INFO: Unmounting DAV drive"
+    gio mount --unmount davs://${DAVUSER}@"${DAVSRV}"
+}
+
+unzipFile() {
+    [[ -d "${GITLOCAL}" ]] || mkdir -p "${GITLOCAL}"
+    # unzip ZIP from dav to GITLOCAL
+    echo "INFO: Mounting DAV directories..."    
+    # DAV is s l o w, so we have to walk through directories
+    #pushd "${DAVMNT}"/"${STASHPATH}"
+    cd /tmp/
+    pwd
+    cd xdg-runtime-sek
+    cd gvfs
+    pwd
+    cd "dav:host=pnt.redhat.com,ssl=true,user=skenlon,prefix=%2Falfresco%2Fwebdav"
+    pwd
+    cd Sites
+    cd pnt-portal
+    pwd
+    cd documentLibrary
+    cd Brand\ assets
+    cd Icons
+    pwd
+    cd NEW\ Standard\ icons
+    pwd
+    cd 00_ALL_ICONS_ZIP_FOLDERS
+    pwd
+    echo "Copying from DAV (this will take some time)..."
+    cp Hard*zip /tmp/"${STASHTMP}"
+    echo "Unzipping..."
+    unzip /tmp/"${STASHTMP}" -d "${GITLOCAL}"
+}
+
+gitRoutine() {
+    [[ $VERBOSE > 0 ]] && echo "Git routine started..."
+    pushd "${GITLOCAL}"
+    [[ $VERBOSE > 0 ]] && pwd
+    [[ "${FORCE}" > 0 ]] && git reset --hard HEAD
+
+    if [ "${PUSH}" > 0 ]; then
+	[[ $VERBOSE > 0 ]] && echo "INFO: Starting git operations..."    
+	git add .
+	git commit -m "Updated for ${DATE}"
+	git tag '${DATE}'
+	git push --tags origin HEAD && SUCCESS=1
+    fi
+
+    popd
+}
+
+goodBye() {
+    if [ "${SUCCESS}" == 1 ]; then
+	echo "Iconset updated successfully!"
+    elif [ "${PUSH}" == 0 ]; then
+	 echo "Iconset unzipped and placed in ${GITDIR}"
+	 echo "Nothing has been staged or pushed."
+    else
+	echo "There was an error."
+	echo "Contact the developer of $0"
+	echo "You might also try to commit the data manually."
+    fi
+}
+
+# process options
+while [ True ]; do
+if [ "$1" = "--help" -o "$1" = "-h" ]; then
+    echo " "
+    echo "$0 [OPTIONS] GIT_DIRECTORY"
+    echo "--verbose -v        Print lots of information to terminal." 
+    echo "--download-only -d  Download update, taking no Git actions."
+    echo "--force   -f        Do 'git reset --hard HEAD' before commit."
+    echo "--user    -u        Set DAV user. Defaults to current username."
+    echo " "
+    exit
+elif [ "$1" = "--verbose" -o "$1" = "-v" ]; then
+    VERBOSE=1
+    shift 1
+elif [ "$1" = "--force" -o "$1" = "-f" ]; then
+    FORCE=1
+    [[ $VERBOSE > 0 ]] && echo "INFO: Activated --force"
+    shift 1
+elif [ "$1" = "--download-only" -o "$1" = "-d" ]; then
+    PUSH=0
+    [[ $VERBOSE > 0 ]] && echo "INFO: Activated --download-only"    
+    shift 1
+elif [ "$1" = "--user" -o "$1" = "-u" ]; then
+    DAVUSER="${2}"
+    [[ $VERBOSE > 0 ]] && echo "INFO: DAV user set to ${2}"    
+    shift 2
+else
+    break
+fi
+done
+
+if [ "$1" = "" ]; then
+    echo "You must provide the path to your local Git repo."
+    echo "For example: $0 /home/tux/Code/iconset.git"
+    echo " "
+    echo "Cannot continue without a Git location. Exiting."
+    exit
+else
+    GITLOCAL="${1}"
+fi
+
+    
+# main
+mountDav
+getDavInfo
+unzipFile
+gitRoutine
+unmountDav
+goodBye
