@@ -1,0 +1,39 @@
+.\" getzipgit - iconset downloader and uploader
+.TH "getzipgit" "8" ""  "Seth Kenlon" ""
+.SH "NAME"
+getzipgit \- iconset downloader and uploader
+.SH "SYNOPSIS"
+\fBgetzipgit\fP [OPTIONS] GET_REPOSITORY
+.nf 
+.SH "DESCRIPTION"
+.PP 
+This is a script to fetch releases of a particular set of openly licensed icons from a remote DAV server and to push to a public Git repository.
+.PP
+This script is somewhat convoluted due to quirks in response time from the DAV server it was written for, and it is very site specific, so it\'s purely an internal tool.
+.PP
+.SH "USAGE"
+.TP
+Issue a command like this:
+.PP
+\fBgetzipgit\fP --user tux ~/Code/example.git
+.PP
+This sets the DAV username to \fBtux\fP, and identifies your local Git repo called \fBexample.git\fP as the target for downloaded files.
+.PP
+After the files are downloaded into your Git repository, they are committed and pushed to your remote repository.
+.SH OPTIONS
+.PP
+.TP
+.B -v, --verbose
+Print extra information as the command runs.
+.TP
+.B -u, --user
+Set the DAV username. Defaults to your standard $USER name.
+.PP
+.SH "AUTHORS"
+.nf
+Seth Kenlon (skenlon@redhat.com)
+.fi
+.PP
+.SH "BUGS"
+Email bugs reports or fixes to skenlon@redhat.com or report to the Git issues.
+.fi

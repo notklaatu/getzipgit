@@ -22,7 +22,13 @@ mountDav() {
 }
 
 getDavInfo() {
-    DAVMNT=`gio info davs://${DAVUSER}@${DAVSRV} | awk -F": " '/local path/{ print $2 ;}'`
+    ID=`id --user`
+    DAVMNT="/run/user/${ID}/gvfs/dav:host=pnt.redhat.com,ssl=true,user=${DAVUSER},prefix=%2Falfresco%2Fwebdav"
+
+    if [ "x$DAVMNT" == "x" ]; then
+	DAVMNT=`gio info davs://${DAVUSER}@${DAVSRV} | awk -F": " '/local path/{ print $2 ;}'`
+    fi
+    
     [[ $VERBOSE > 0 ]] && echo "INFO: Filesystem mounted at $DAVMNT"
 }
 
@@ -38,12 +44,15 @@ unzipFile() {
     echo "INFO: Mounting DAV directories..."    
     # DAV is s l o w, so we have to walk through directories
     #pushd "${DAVMNT}"/"${STASHPATH}"
-    cd /tmp/
-    pwd
-    cd xdg-runtime-sek
-    cd gvfs
-    pwd
-    cd "dav:host=pnt.redhat.com,ssl=true,user=skenlon,prefix=%2Falfresco%2Fwebdav"
+#    echo $DAVMNT | awk -F"/" -e '{split($0, ARR, "/")}'
+#    cd $ARR[2] # /tmp or /run
+#    pwd
+#    cd $ARR[3] # /xdg-runtime-USER or /user
+#    cd $ARR[4] # gvfs or USER ID 
+#    cd gvfs
+#    pwd
+    #    cd "dav:host=pnt.redhat.com,ssl=true,user=skenlon,prefix=%2Falfresco%2Fwebdav"
+    cd "${DAVMNT}"
     pwd
     cd Sites
     cd pnt-portal
@@ -72,7 +81,7 @@ gitRoutine() {
 	[[ $VERBOSE > 0 ]] && echo "INFO: Starting git operations..."    
 	git add .
 	git commit -m "Updated for ${DATE}"
-	git tag '${DATE}'
+	git tag "${DATE}"
 	git push --tags origin HEAD && SUCCESS=1
     fi
 
