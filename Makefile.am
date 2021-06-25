@@ -1,6 +1,7 @@
 AUTOMAKE_OPTIONS = foreign subdir-objects
 dist_bin_SCRIPTS = bin/getzipgit
 dist_man_MANS = man/getzipgit.8
+dist_doc_DATA = README.md LICENSE
 
 all-am: getzipgit
 
